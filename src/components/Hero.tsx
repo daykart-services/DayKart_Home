@@ -54,12 +54,38 @@ const Hero: React.FC = () => {
                 fontWeight: 700
               }}
             >
-              PREMIUM <br/>COLLECTION
+              PREMIUM <br />COLLECTION
             </h1>
             <p className={`home-description ${isDark ? 'text-gray-300' : ''}`}>
-            Explore our new collection and make yourself feel at home.
+              Explore our new collection and make yourself feel at home.
             </p>
-            <a href="#" className={`button ${isDark ? 'button-dark' : ''}`}>
+            {/* --- MODIFICATION STARTS HERE --- */}
+            <p className={`home-description ${isDark ? 'text-gray-300' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1rem' }}>
+              {/* Caution Icon */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+
+              <span>
+                <strong>Caution!</strong> Website under development, contact this email regarding buying and verifications
+                <br />
+                <strong>Email Address:</strong> pushpaksrinivas@gmail.com
+              </span>
+            </p>
+            {/* --- MODIFICATION ENDS HERE --- */}
+            <a href="#" className={`button ${isDark ? 'button-dark' : ''}`} style={{ marginTop: '1.5rem' }}>
               Explore Now
             </a>
           </div>

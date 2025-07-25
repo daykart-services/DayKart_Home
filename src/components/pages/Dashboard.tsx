@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { useCartLike } from '../CartLikeContext';
 import { useProducts, useTheme, useUser } from '../ThemeContext';
-import { ShoppingCart, Heart, Trash2, ArrowRight, X, Clock, Truck, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Heart, Trash2, ArrowRight, X, Clock, Truck, CheckCircle, Package } from 'lucide-react';
 import UserAuth from '../UserAuth';
 
 const Dashboard: React.FC = () => {
@@ -12,6 +13,9 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'cart' | 'liked' | 'orders'>('cart');
   const [showCheckout, setShowCheckout] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [ordersVisible, setOrdersVisible] = useState(() => {
+    return localStorage.getItem('adminOrdersVisible') === 'true';
+  });
   const [userDetails, setUserDetails] = useState({
     name: '',
     phone: '',
@@ -56,6 +60,24 @@ const Dashboard: React.FC = () => {
       ]
     }
   ];
+
+
+  // Listen for admin changes to order visibility
+  useEffect(() => {
+    const handleOrdersVisibilityChange = (event: any) => {
+      setOrdersVisible(event.detail.visible);
+    };
+
+    window.addEventListener('ordersVisibilityChanged', handleOrdersVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('ordersVisibilityChanged', handleOrdersVisibilityChange);
+    };
+  }, []);
+  // Listen for admin changes to order visibility
+  useEffect(() => {
+
+  });
 
   const likedProducts = products.filter(p => liked.includes(p.id));
   const cartProducts = cart.map(item => {
@@ -124,12 +146,12 @@ const Dashboard: React.FC = () => {
           <button
             className={`pb-3 px-2 text-lg font-medium transition-colors duration-200 border-b-2 rounded-t-md ${
               activeTab === 'orders'
-                ? 'border-black text-black'
+                ? 'border-black text-black dark:border-white dark:text-white'
                 : 'border-transparent text-gray-400 dark:text-gray-400 hover:text-black'
             }`}
             onClick={() => setActiveTab('orders')}
           >
-            <Truck className="inline mr-2 mb-1" size={20} /> Orders
+            <Truck className="inline mr-2 mb-1" size={20} /> Orders {ordersVisible && `(${orders.length})`}
           </button>
         </div>
 
@@ -236,56 +258,68 @@ const Dashboard: React.FC = () => {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="mt-8 w-full">
-            <h3 className="text-2xl font-bold mb-6">Your Orders</h3>
-            {orders.length === 0 ? (
-              <div className="text-center text-gray-400">No orders yet.</div>
+            {!ordersVisible ? (
+              <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto py-16 px-6 bg-transparent dark:bg-transparent rounded-2xl shadow-md border border-gray-100 dark:border-gray-800">
+                <Package size={48} className="mb-6 text-gray-300 dark:text-gray-700" />
+                <h3 className="text-xl font-semibold mb-2 text-center">Orders Not Available</h3>
+                <p className="text-base text-gray-500 dark:text-gray-400 text-center mb-6">
+                  Order tracking is currently disabled. Please contact support for assistance with your orders.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-8">
-                {orders.map(order => (
-                  <div key={order.id} className={`border rounded-xl p-6 shadow-sm ${isDark ? 'border-gray-800 bg-black' : 'border-gray-100 bg-white'}`}>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                      <div>
-                        <span className="text-sm text-gray-400">Order ID:</span> <span className="font-semibold">{order.id}</span>
-                        <span className="ml-6 text-sm text-gray-400">Date:</span> <span className="font-semibold">{order.date}</span>
-                      </div>
-                      <div className="mt-2 md:mt-0">
-                        <span className="text-sm text-gray-400">Payment:</span> <span className={`font-semibold ${order.paymentStatus === 'Completed' ? 'text-green-600' : 'text-yellow-600'}`}>{order.paymentStatus}</span>
-                        <span className="ml-6 text-sm text-gray-400">Status:</span> <span className="font-semibold">{order.transportStatus}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col md:flex-row gap-4 mb-4">
-                      {order.products.map(product => (
-                        <div key={product.id} className="flex items-center gap-4">
-                          <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg border" />
+              <>
+                <h3 className="text-2xl font-bold mb-6">Your Orders</h3>
+                {orders.length === 0 ? (
+                  <div className="text-center text-gray-400">No orders yet.</div>
+                ) : (
+                  <div className="space-y-8">
+                    {orders.map(order => (
+                      <div key={order.id} className={`border rounded-xl p-6 shadow-sm ${isDark ? 'border-gray-800 bg-black' : 'border-gray-100 bg-white'}`}>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                           <div>
-                            <div className="font-semibold">{product.name}</div>
-                            <div className="text-sm text-gray-500">Qty: {product.quantity}</div>
-                            <div className="text-sm font-bold">₹{product.price}</div>
+                            <span className="text-sm text-gray-400">Order ID:</span> <span className="font-semibold">{order.id}</span>
+                            <span className="ml-6 text-sm text-gray-400">Date:</span> <span className="font-semibold">{order.date}</span>
+                          </div>
+                          <div className="mt-2 md:mt-0">
+                            <span className="text-sm text-gray-400">Payment:</span> <span className={`font-semibold ${order.paymentStatus === 'Completed' ? 'text-green-600' : 'text-yellow-600'}`}>{order.paymentStatus}</span>
+                            <span className="ml-6 text-sm text-gray-400">Status:</span> <span className="font-semibold">{order.transportStatus}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    {/* Timeline/Status Tracker */}
-                    <div className="flex items-center gap-4 mt-4">
-                      {order.statusTimeline.map((step, idx) => (
-                        <React.Fragment key={step.label}>
-                          <div className="flex flex-col items-center">
-                            {step.completed ? (
-                              <CheckCircle className="text-green-500" size={22} />
-                            ) : (
-                              <Clock className="text-gray-400" size={22} />
-                            )}
-                            <span className={`text-xs mt-1 ${step.completed ? 'text-green-600' : 'text-gray-400'}`}>{step.label}</span>
-                          </div>
-                          {idx < order.statusTimeline.length - 1 && (
-                            <div className={`h-1 w-8 ${order.statusTimeline[idx + 1].completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
+                        <div className="flex flex-col md:flex-row gap-4 mb-4">
+                          {order.products.map(product => (
+                            <div key={product.id} className="flex items-center gap-4">
+                              <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg border" />
+                              <div>
+                                <div className="font-semibold">{product.name}</div>
+                                <div className="text-sm text-gray-500">Qty: {product.quantity}</div>
+                                <div className="text-sm font-bold">₹{product.price}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Timeline/Status Tracker */}
+                        <div className="flex items-center gap-4 mt-4">
+                          {order.statusTimeline.map((step, idx) => (
+                            <React.Fragment key={step.label}>
+                              <div className="flex flex-col items-center">
+                                {step.completed ? (
+                                  <CheckCircle className="text-green-500" size={22} />
+                                ) : (
+                                  <Clock className="text-gray-400" size={22} />
+                                )}
+                                <span className={`text-xs mt-1 ${step.completed ? 'text-green-600' : 'text-gray-400'}`}>{step.label}</span>
+                              </div>
+                              {idx < order.statusTimeline.length - 1 && (
+                                <div className={`h-1 w-8 ${order.statusTimeline[idx + 1].completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         )}

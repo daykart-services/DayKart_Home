@@ -520,6 +520,22 @@ section { padding: 5rem 0 2rem; }
     }
 }
 
+/* Real-time notification animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
 /*Media Queries for larger screens (keep existing)*/
 @media screen and (min-width: 768px) {
     body { margin: 0; }

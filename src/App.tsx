@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider, UserProvider, ProductsProvider } from './components/ThemeContext';
 import { CartLikeProvider } from './components/CartLikeContext';
+import { ProductEventManagerProvider } from './components/ProductEventManager';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
@@ -12,6 +13,8 @@ import BathwarePage from './components/pages/BathwarePage';
 import DormPage from './components/pages/DormPage';
 import NewCollectionsPage from './components/pages/NewCollectionsPage';
 import Dashboard from './components/pages/Dashboard';
+import RealTimeIndicator from './components/RealTimeIndicator';
+import ProductNotification from './components/ProductNotification';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -71,17 +74,21 @@ function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <ProductsProvider>
-          <CartLikeProvider>
-            <div className="min-h-screen">
-              <Navigation onPageChange={handlePageChange} />
-              <div className={currentPage === 'dashboard' ? 'pt-24' : 'pt-16'}>
-                {renderPage()}
-                <Footer />
+        <ProductEventManagerProvider>
+          <ProductsProvider>
+            <CartLikeProvider>
+              <div className="min-h-screen">
+                <Navigation onPageChange={handlePageChange} />
+                <div className={currentPage === 'dashboard' ? 'pt-24' : 'pt-16'}>
+                  {renderPage()}
+                  <Footer />
+                  <RealTimeIndicator />
+                  <ProductNotification />
+                </div>
               </div>
-            </div>
-          </CartLikeProvider>
-        </ProductsProvider>
+            </CartLikeProvider>
+          </ProductsProvider>
+        </ProductEventManagerProvider>
       </UserProvider>
     </ThemeProvider>
   );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Package, Users, ShoppingCart, TrendingUp, X, Save, Filter, Clock, Truck, CheckCircle, Check, ArrowRight } from 'lucide-react';
 import { useTheme, useProducts } from '../ThemeContext';
+import { useProductEvents } from '../ProductEventManager';
 
 interface AdminPortalProps {
   onClose: () => void;
@@ -9,10 +10,14 @@ interface AdminPortalProps {
 const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
   const { isDark } = useTheme();
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { emitProductAdded, emitProductUpdated, emitProductDeleted } = useProductEvents();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [ordersVisible, setOrdersVisible] = useState(() => {
+    return localStorage.getItem('adminOrdersVisible') === 'true';
+  });
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -123,7 +128,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
         featured: newProduct.featured,
       };
       
-      addProduct(productData);
+      const createdProduct = addProduct(productData);
+      
+      // Emit real-time event for immediate UI updates
+      if (createdProduct) {
+        emitProductAdded(createdProduct);
+      }
+      
       resetForm();
       setShowAddProduct(false);
     }
@@ -160,7 +171,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
         featured: newProduct.featured,
       };
       
-      updateProduct(editingProduct.id, productData);
+      const updatedProduct = updateProduct(editingProduct.id, productData);
+      
+      // Emit real-time event for immediate UI updates
+      if (updatedProduct) {
+        emitProductUpdated(updatedProduct);
+      }
+      
       resetForm();
       setEditingProduct(null);
       setShowAddProduct(false);
@@ -170,6 +187,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
   const handleDeleteProduct = (id: number) => {
     if (confirm('Are you sure you want to delete this product?')) {
       deleteProduct(id);
+      
+      // Emit real-time event for immediate UI updates
+      emitProductDeleted(id);
     }
   };
 
@@ -259,6 +279,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
     });
   };
 
+  const toggleOrdersVisibility = () => {
+    const newVisibility = !ordersVisible;
+    setOrdersVisible(newVisibility);
+    localStorage.setItem('adminOrdersVisible', newVisibility.toString());
+    // Dispatch event to notify other components
+    window.dispatchEvent(new CustomEvent('ordersVisibilityChanged', { 
+      detail: { visible: newVisibility } 
+    }));
+  };
+
   const stats = {
     totalProducts: products.length,
     totalValue: products.reduce((sum, p) => sum + p.price, 0),
@@ -329,6 +359,33 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onClose }) => {
                   <Truck size={20} />
                   Orders
                 </button>
+                
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    User Dashboard Controls
+                  </h3>
+                  <button
+                    onClick={toggleOrdersVisibility}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
+                      ordersVisible
+                        ? 'bg-green-500 text-white'
+                        : isDark
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Package size={16} />
+                      Orders Display
+                    </span>
+                    <span className="text-xs font-medium">
+                      {ordersVisible ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                  <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Control whether users can see orders in their dashboard
+                  </p>
+                </div>
               </nav>
             </div>
           </div>

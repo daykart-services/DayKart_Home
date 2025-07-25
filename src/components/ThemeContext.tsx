@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useProductEvents } from './ProductEventManager';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -76,7 +77,19 @@ export const useProducts = () => {
 };
 
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>([
+  const [products, setProducts] = useState<Product[]>(() => {
+    // Load products from localStorage on initialization
+    const stored = localStorage.getItem('products');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Failed to load products from localStorage:', error);
+      }
+    }
+    
+    // Default products if no stored data
+    return [
     // Sample products
     {
       id: 1,
@@ -152,7 +165,55 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       collection: 'Smart Home Essentials',
       featured: true
     }
-  ]);
+    ];
+  });
+
+  // Persist products to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('products', JSON.stringify(products));
+    } catch (error) {
+      console.error('Failed to save products to localStorage:', error);
+    }
+  }, [products]);
+
+  // Subscribe to real-time product events
+  useEffect(() => {
+    // Only subscribe if ProductEventManager is available
+    if (typeof window !== 'undefined') {
+      const handleProductEvent = (event: any) => {
+        switch (event.type) {
+          case 'PRODUCT_ADDED':
+            setProducts(prev => {
+              // Check if product already exists to prevent duplicates
+              const exists = prev.some(p => p.id === event.payload.id);
+              if (exists) return prev;
+              return [...prev, event.payload];
+            });
+            break;
+          case 'PRODUCT_UPDATED':
+            setProducts(prev => prev.map(product => 
+              product.id === event.payload.id ? { ...product, ...event.payload } : product
+            ));
+            break;
+          case 'PRODUCT_DELETED':
+            setProducts(prev => prev.filter(product => product.id !== event.payload.id));
+            break;
+        }
+      };
+
+      // Listen for custom events (fallback for when context isn't available)
+      const handleCustomEvent = (event: CustomEvent) => {
+        handleProductEvent(event.detail);
+      };
+
+      window.addEventListener('productEventUpdate', handleCustomEvent as EventListener);
+      
+      return () => {
+        window.removeEventListener('productEventUpdate', handleCustomEvent as EventListener);
+      };
+    }
+  }, []);
 
   const getProductsByCategory = (category: string) => {
     return products.filter(product => product.category === category);
@@ -163,13 +224,25 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...productData,
       id: Math.max(...products.map(p => p.id), 0) + 1
     };
-    setProducts(prev => [...prev, newProduct]);
+    
+    setProducts(prev => {
+      const updated = [...prev, newProduct];
+      return updated;
+    });
+    
+    return newProduct;
   };
 
   const updateProduct = (id: number, productData: Partial<Product>) => {
-    setProducts(prev => prev.map(product => 
-      product.id === id ? { ...product, ...productData } : product
-    ));
+    setProducts(prev => {
+      const updated = prev.map(product => 
+        product.id === id ? { ...product, ...productData } : product
+      );
+      return updated;
+    });
+    
+    const updatedProduct = products.find(p => p.id === id);
+    return updatedProduct ? { ...updatedProduct, ...productData } : null;
   };
 
   const deleteProduct = (id: number) => {
